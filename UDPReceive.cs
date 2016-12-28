@@ -56,7 +56,7 @@ public class UDPReceive : MonoBehaviour {
 	public string pos_str = "";
 	public string quat_str = "";
 
-	//
+	//position and rotation for Camera
 	public float posX;
 	public float posY;
 	public float posZ;
@@ -65,6 +65,11 @@ public class UDPReceive : MonoBehaviour {
 	public float rotY;
 	public float rotZ;
 	public float rotW;
+
+	//Initial position for Camera deault in Unity is (0,1,-10)
+	public float CaminitPosX = 0;
+	public float CaminitPosY = 0;
+	public float CaminitPosZ = 0;
 
 
 	// If start from shell
@@ -125,12 +130,13 @@ public class UDPReceive : MonoBehaviour {
 				quat_str = xp_pkt.rot.x + " " + xp_pkt.rot.y + " " + xp_pkt.rot.z + " " + xp_pkt.rot.w;
 
 
-				//Set the position X,Y,Z variable and rotation X,Y,Z,W variable
+				//Set the position X,Y,Z variable 
 				
 				posX = xp_pkt.pos.x;
-				posY = xp_pkt.pos.y;
-				posZ = xp_pkt.pos.z;
+				posY = xp_pkt.pos.z;
+				posZ = xp_pkt.pos.y;
 
+				// ?? how to set pkt.rot.x / y/ z to 
 				rotX = xp_pkt.rot.x;
 				rotY = xp_pkt.rot.y;
 				rotZ = xp_pkt.rot.z;
@@ -145,7 +151,15 @@ public class UDPReceive : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update () {
-		transform.position = new Vector3(posX,posY,posZ);
-		transform.rotation = new Quaternion(rotX,rotY,rotZ,rotW);
+		//transform.position = new Vector3(posX + CaminitPosX,posY + CaminitPosY, posZ + CaminitPosZ);
+		
+		//Convert Camera Quaternion to Unity Quaternion
+		Quaternion quat = new Quaternion(rotX,rotZ,rotY,rotW);
+		Vector3 euler = quat.eulerAngles;
+		
+		print (" Chris:" + euler.x + "               " + euler.y + "            " + euler.z);
+
+		//Check this eulerAngles
+		transform.eulerAngles = new Vector3 (  (euler.x + 90) , euler.y, euler.z );
 	}
 }
