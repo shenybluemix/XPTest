@@ -65,6 +65,8 @@ public class UDPReceive : MonoBehaviour {
 	public float rotY;
 	public float rotZ;
 	public float rotW;
+	public float initY;
+	public bool isFirst = true;
 
 	//Initial position for Camera deault in Unity is (0,1,-10)
 	public float CaminitPosX = 0;
@@ -90,17 +92,6 @@ public class UDPReceive : MonoBehaviour {
 		init();
 	}
 
-	// OnGUI
-	void OnGUI() {
-		Rect rectObj = new Rect(40, 10, 200, 400);
-		GUIStyle style = new GUIStyle();
-		style.alignment = TextAnchor.UpperLeft;
-		GUI.Box(rectObj, "# UDPReceive listening " + port + " #\n"
-			+ "xyz: " + pos_str + "\n"
-			+ "quat:" + quat_str + "\n"
-			, style);
-	}
-
 	// Init
 	private void init() {
 		// define port: This has to be -udp_port xxxx for the xp tracking app
@@ -115,12 +106,13 @@ public class UDPReceive : MonoBehaviour {
 
 	// receive thread
 	private void ReceiveData() {
+		//TODO: Add lock to make sure threads are synched with update/ or verify that they won't have race condition issues
 		client = new UdpClient(port);  // receiving port
 		while (true) {
 			try {
 				IPEndPoint anyIP = new IPEndPoint(IPAddress.Any, 0);  // sender
 				byte[] data = client.Receive(ref anyIP);
-				print("recevied udp pkt len = " + data.Length);
+				//print("recevied udp pkt len = " + data.Length);
 
 				GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
 				XpPacket xp_pkt = (XpPacket)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(XpPacket));
@@ -141,7 +133,6 @@ public class UDPReceive : MonoBehaviour {
 				rotY = xp_pkt.rot.y;
 				rotZ = xp_pkt.rot.z;
 				rotW = xp_pkt.rot.w;
-
 			}
 			catch (System.Exception err) {
 				print(err.ToString());
@@ -149,17 +140,30 @@ public class UDPReceive : MonoBehaviour {
 		}
 	}
 
+// OnGUI
+	void OnGUI() {
+		Rect rectObj = new Rect(40, 10, 200, 400);
+		GUIStyle style = new GUIStyle();
+		style.alignment = TextAnchor.UpperLeft;
+		GUI.Box(rectObj, "# UDPReceive listening " + port + " #\n"
+			+ "xyz: " + pos_str + "\n"
+			+ "quat:" + quat_str + "\n"
+			, style);
+		
+	}
+
 	// Update is called once per frame
 	void Update () {
-		//transform.position = new Vector3(posX + CaminitPosX,posY + CaminitPosY, posZ + CaminitPosZ);
+		//TODO: Add lock to make sure threads are synched with udp sync thread/ or verify that they won't have race condition issues
+		transform.position = new Vector3(posX + CaminitPosX,posY + CaminitPosY, posZ + CaminitPosZ);
 		
 		//Convert Camera Quaternion to Unity Quaternion
-		Quaternion quat = new Quaternion(rotX,rotZ,rotY,rotW);
-		Vector3 euler = quat.eulerAngles;
-		
-		print (" Chris:" + euler.x + "               " + euler.y + "            " + euler.z);
+		float adjustment = .5f;
+		Quaternion quat = new Quaternion(-rotX,rotY+adjustment,-rotZ, rotW);
+		//print (" euler:" + euler.x + "               " + euler.y + "            " + euler.z);
 
 		//Check this eulerAngles
-		transform.eulerAngles = new Vector3 (  (euler.x + 90) , euler.y, euler.z );
+		transform.rotation = quat;
+		//transform.eulerAngles = new Vector3 ( euler.x , euler.z, euler.y );
 	}
 }
